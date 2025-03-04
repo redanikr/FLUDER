@@ -1,7 +1,9 @@
-#include "Vulkan/Device.h"
-#include "Vulkan/Instance.h"
+#include "Window.h"
+#include "Vulkan/Config/VulkanManager.h"
 int main(){
-    FLUDER::Vulkan::Instance instance(true);
-    FLUDER::Vulkan::Device device(instance);
+    FLUDER::Window window;
+    FLUDER::Vulkan::VulkanManager configuration(window,true);
+    while(!window.shouldClose())
+     	configuration.draw();
     return 0;
 }

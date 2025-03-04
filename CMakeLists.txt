@@ -13,7 +13,7 @@ src/Engine.cpp
 src/Renderer.cpp
 src/Vulkan/Instance.cpp
 src/Vulkan/Device.cpp
-src/Vulkan/Config/VulkanConfiguration.cpp
+src/Vulkan/Config/VulkanManager.cpp
 )
 target_include_directories(FLUDER PUBLIC GLFW/)
 target_link_directories(FLUDER PUBLIC GLFW/)

@@ -1,7 +1,9 @@
 #include "Window.h"
+#include "glfw3.h"
 
 FLUDER::Window::Window() {
     glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     m_window = glfwCreateWindow(900,600,"Hello world",NULL,NULL);
 }
 

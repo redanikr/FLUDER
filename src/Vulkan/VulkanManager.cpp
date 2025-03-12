@@ -14,6 +14,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_win32.h>
+
 const std::vector<const char *> FLUDER::Vulkan::VulkanManager::instanceExtensions = {VK_KHR_SURFACE_EXTENSION_NAME,VK_KHR_WIN32_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
 const std::vector<const char *> FLUDER::Vulkan::VulkanManager::deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 const std::vector<const char *> FLUDER::Vulkan::VulkanManager::enabledLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -23,7 +24,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FLUDER::Vulkan::VulkanManager::debugUtilsMessageC
     return false;
 }
 
-void FLUDER::Vulkan::VulkanManager::addTriangle(){
+void FLUDER::Vulkan::VulkanManager::addTriangle(const Triangle & triangle){
+    
+}
+void FLUDER::Vulkan::VulkanManager::deleteTriangle(const Triangle & triangle){
     
 }
 FLUDER::Vulkan::VulkanManager::VulkanManager(const FLUDER::Window & window, bool validationEnabled) : m_window(window), m_validationEnabled(validationEnabled){
@@ -42,7 +46,6 @@ FLUDER::Vulkan::VulkanManager::VulkanManager(const FLUDER::Window & window, bool
     createVertexBuffer();
     createIndexBuffer();
 }
-
 FLUDER::Vulkan::VulkanManager::~VulkanManager(){
     vkDeviceWaitIdle(m_device);
     vkDestroySemaphore(m_device, m_imageAcquireSemaphore, nullptr);
@@ -233,8 +236,8 @@ void FLUDER::Vulkan::VulkanManager::createImageViews(){
     }
 }
 void FLUDER::Vulkan::VulkanManager::createShaders(){
-    system("glslc.exe ../shaders/shader.vert -o vert.spv");
-    system("glslc.exe ../shaders/shader.frag -o frag.spv");
+    int exitCode1 = system("glslc.exe ../../../shaders/shader.vert -o vert.spv");
+    int exitCode2 = system("glslc.exe ../../../shaders/shader.frag -o frag.spv");
     std::vector<char> vertexShaderCode;
     std::vector<char> fragmentShaderCode;
     std::ifstream file1 = std::ifstream("vert.spv",std::ios_base::binary);
@@ -281,7 +284,7 @@ void FLUDER::Vulkan::VulkanManager::createPipeline(){
     VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
     vertexInputAttributeDescription.binding = 0;
     vertexInputAttributeDescription.location = 0;
-    vertexInputAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexInputAttributeDescription.offset = 0;
 
     VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
@@ -572,10 +575,10 @@ void FLUDER::Vulkan::VulkanManager::createVertexBuffer(){
 void FLUDER::Vulkan::VulkanManager::createIndexBuffer(){
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCreateInfo.size = 4 * 6;
+    bufferCreateInfo.size = VkDeviceSize(4 * 6);
     bufferCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
+    
     vkCreateBuffer(m_device, &bufferCreateInfo, nullptr, &m_indexBuffer);
 
     VkMemoryRequirements memoryRequirements;

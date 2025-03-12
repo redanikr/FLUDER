@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <vulkan/vulkan_core.h>
 #include <vector>
-#include "../../Window.h"
+#include "../Window.h"
+#include "../Triangle.h"
+
 namespace FLUDER::Vulkan {
     class VulkanManager{
         public:   
@@ -11,7 +13,8 @@ namespace FLUDER::Vulkan {
         VulkanManager(const FLUDER::Window & window, bool validationEnabled);
         ~VulkanManager();
         void draw();
-        void addTriangle();
+        void addTriangle(const Triangle & triangle);
+        void deleteTriangle(const Triangle & triangle);
         private:
         void createInstance();
         void choosePhysicalDevice();
@@ -64,7 +67,6 @@ namespace FLUDER::Vulkan {
         VkDescriptorSetLayout m_descriptorSetLayout;
         uint32_t m_vertexCount = 1;
         uint32_t m_indexCount = 1;
-
 
         static const std::vector<const char *> instanceExtensions;
         static const std::vector<const char *> deviceExtensions;

@@ -1,17 +1,16 @@
 #pragma once
 
 #include <cstdint>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include <vector>
 #include "../Window.h"
 #include "../Triangle.h"
 
-namespace FLUDER::Vulkan {
-    class VulkanManager{
-        public:   
-        static VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessageCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,VkDebugUtilsMessageTypeFlagsEXT messageType,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,void* pUserData);
-        VulkanManager(const FLUDER::Window & window, bool validationEnabled);
-        ~VulkanManager();
+namespace fldr::vk {
+    class Manager{
+        public:     
+        Manager(const fldr::Window & window, bool validationEnabled);
+        ~Manager();
         void draw();
         void addTriangle(const Triangle & triangle);
         void deleteTriangle(const Triangle & triangle);
@@ -68,8 +67,5 @@ namespace FLUDER::Vulkan {
         uint32_t m_vertexCount = 1;
         uint32_t m_indexCount = 1;
 
-        static const std::vector<const char *> instanceExtensions;
-        static const std::vector<const char *> deviceExtensions;
-        static const std::vector<const char *> enabledLayers;
     };
 }

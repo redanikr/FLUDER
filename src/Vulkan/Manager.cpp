@@ -1,36 +1,26 @@
-#include "VulkanManager.h"
 #include <fstream>
 #include <ios>
 #define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
 #include "glfw3.h"
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "glfw3native.h"
+#include <vulkan/vulkan.h>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
-#include <libloaderapi.h>
 #include <vector>
-#include <vulkan/vulkan_core.h>
-#include <vulkan/vulkan_win32.h>
+#include "Manager.h"
+#include "Utils/Utils.h"
+#include "Config/Config.h"
 
-const std::vector<const char *> FLUDER::Vulkan::VulkanManager::instanceExtensions = {VK_KHR_SURFACE_EXTENSION_NAME,VK_KHR_WIN32_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
-const std::vector<const char *> FLUDER::Vulkan::VulkanManager::deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-const std::vector<const char *> FLUDER::Vulkan::VulkanManager::enabledLayers = {"VK_LAYER_KHRONOS_validation"};
-
-VKAPI_ATTR VkBool32 VKAPI_CALL FLUDER::Vulkan::VulkanManager::debugUtilsMessageCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData){
-    std::cout << pCallbackData->pMessage << std::endl;
-    return false;
-}
-
-void FLUDER::Vulkan::VulkanManager::addTriangle(const Triangle & triangle){
+void fldr::vk::Manager::addTriangle(const Triangle & triangle){
     
 }
-void FLUDER::Vulkan::VulkanManager::deleteTriangle(const Triangle & triangle){
+void fldr::vk::Manager::deleteTriangle(const Triangle & triangle){
     
 }
-FLUDER::Vulkan::VulkanManager::VulkanManager(const FLUDER::Window & window, bool validationEnabled) : m_window(window), m_validationEnabled(validationEnabled){
+fldr::vk::Manager::Manager(const fldr::Window & window, bool validationEnabled) : m_validationEnabled(validationEnabled), m_window(window) {
     
     createInstance();
     choosePhysicalDevice();
@@ -46,7 +36,7 @@ FLUDER::Vulkan::VulkanManager::VulkanManager(const FLUDER::Window & window, bool
     createVertexBuffer();
     createIndexBuffer();
 }
-FLUDER::Vulkan::VulkanManager::~VulkanManager(){
+fldr::vk::Manager::~Manager(){
     vkDeviceWaitIdle(m_device);
     vkDestroySemaphore(m_device, m_imageAcquireSemaphore, nullptr);
     vkDestroySemaphore(m_device, m_renderSemaphore, nullptr);
@@ -57,7 +47,7 @@ FLUDER::Vulkan::VulkanManager::~VulkanManager(){
     vkDestroyShaderModule(m_device, m_vertexShaderModule, nullptr);
     vkDestroyShaderModule(m_device, m_fragmentShaderModule, nullptr);
     for (VkImageView imageView : m_swapchainImageViews)
-    vkDestroyImageView(m_device, imageView, nullptr);
+        vkDestroyImageView(m_device, imageView, nullptr);
     vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
     vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
     vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
@@ -73,37 +63,14 @@ FLUDER::Vulkan::VulkanManager::~VulkanManager(){
     vkDestroyInstance(m_instance, nullptr);
 }
 
-void FLUDER::Vulkan::VulkanManager::createInstance(){
-    VkApplicationInfo applicationInfo = {};
-    applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	applicationInfo.pApplicationName = "FLUDER";
-	applicationInfo.pEngineName = "FLUDER";
-	applicationInfo.apiVersion = VK_API_VERSION_1_3;
+void fldr::vk::Manager::createInstance(){
+    VkApplicationInfo applicationInfo = fldr::vk::config::applicationInfo();
+    VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfoEXT = fldr::vk::config::debugUtilsMessengerCreateInfoEXT();
 
-    VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfoEXT = {};
-    debugUtilsMessengerCreateInfoEXT.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    debugUtilsMessengerCreateInfoEXT.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    debugUtilsMessengerCreateInfoEXT.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    debugUtilsMessengerCreateInfoEXT.pfnUserCallback = debugUtilsMessageCallback;
+    std::vector<const char*> extensions = vk::utils::vkInstanceExtensions(true);
+    std::vector<const char*> layers = vk::utils::layers();
 
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    std::vector<const char *> extensions = instanceExtensions;
-    if(m_validationEnabled)
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    VkInstanceCreateInfo instanceCreateInfo = {};
-    instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pApplicationInfo = &applicationInfo;
-    instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
-    if(m_validationEnabled){
-        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(enabledLayers.size());
-        instanceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
-        instanceCreateInfo.pNext = &debugUtilsMessengerCreateInfoEXT;
-    }
+    VkInstanceCreateInfo instanceCreateInfo = fldr::vk::config::instanceCreateInfo(applicationInfo, debugUtilsMessengerCreateInfoEXT, m_validationEnabled, extensions, layers);
 
     vkCreateInstance(&instanceCreateInfo,nullptr,&m_instance);
 
@@ -114,7 +81,7 @@ void FLUDER::Vulkan::VulkanManager::createInstance(){
     }
 }
 
-void FLUDER::Vulkan::VulkanManager::choosePhysicalDevice(){
+void fldr::vk::Manager::choosePhysicalDevice(){
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
     if(deviceCount == 0) throw std::exception("No GPU found!");
@@ -123,7 +90,7 @@ void FLUDER::Vulkan::VulkanManager::choosePhysicalDevice(){
     m_physicalDevice = devices[0];
 }
 
-void FLUDER::Vulkan::VulkanManager::createDevice(){
+void fldr::vk::Manager::createDevice(){
     float queuePriority = 1.0f;
     VkDeviceQueueCreateInfo deviceQueueCreateInfo = {};
     deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -145,21 +112,23 @@ void FLUDER::Vulkan::VulkanManager::createDevice(){
     vkGetPhysicalDeviceFeatures2(m_physicalDevice, &features);
     features.pNext = &physicalDeviceDynamicRenderingFeatures;
     
+    std::vector<const char*> layers = fldr::vk::utils::layers();
+    std::vector<const char*> extensions = fldr::vk::utils::vkDeviceExtensions();
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceCreateInfo.pNext = &features;
     deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
     deviceCreateInfo.queueCreateInfoCount = 1;
-    deviceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
-    deviceCreateInfo.enabledLayerCount = enabledLayers.size();
-    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
-    deviceCreateInfo.enabledExtensionCount = deviceExtensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
+    deviceCreateInfo.enabledExtensionCount = extensions.size();
+    deviceCreateInfo.ppEnabledLayerNames = layers.data();
+    deviceCreateInfo.enabledLayerCount = layers.size();
 
     vkCreateDevice(m_physicalDevice, &deviceCreateInfo, nullptr, &m_device);
     
     vkGetDeviceQueue(m_device, m_graphicsQueueIndex, 0, &m_graphicsQueue);
 }
-void FLUDER::Vulkan::VulkanManager::getGraphicsQueueHandle(){
+void fldr::vk::Manager::getGraphicsQueueHandle(){
     uint32_t queueCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueCount,nullptr);
     std::vector<VkQueueFamilyProperties> properties(queueCount);
@@ -171,7 +140,7 @@ void FLUDER::Vulkan::VulkanManager::getGraphicsQueueHandle(){
         }
     }
 }
-void FLUDER::Vulkan::VulkanManager::createSurface(){
+void fldr::vk::Manager::createSurface(){
     VkWin32SurfaceCreateInfoKHR win32SurfaceCreateInfoKHR = {};
     win32SurfaceCreateInfoKHR.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     win32SurfaceCreateInfoKHR.hwnd = glfwGetWin32Window(m_window.getWindow());
@@ -182,7 +151,7 @@ void FLUDER::Vulkan::VulkanManager::createSurface(){
     vkCreateWin32SurfaceKHR(m_instance, &win32SurfaceCreateInfoKHR, nullptr, &m_surface);
 
 }
-void FLUDER::Vulkan::VulkanManager::createSwapchain(){
+void fldr::vk::Manager::createSwapchain(){
     VkSurfaceCapabilitiesKHR surfaceCapabilitiesKHR;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &surfaceCapabilitiesKHR);
     uint32_t physicalDeviceSurfaceFormatCount = 0;
@@ -209,13 +178,13 @@ void FLUDER::Vulkan::VulkanManager::createSwapchain(){
     swapchainCreateInfoKHR.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     swapchainCreateInfoKHR.presentMode = m_presentModeKHR;
     swapchainCreateInfoKHR.oldSwapchain = VK_NULL_HANDLE;
-    VkResult r = vkCreateSwapchainKHR(m_device, &swapchainCreateInfoKHR, nullptr, &m_swapchain);
+    vkCreateSwapchainKHR(m_device, &swapchainCreateInfoKHR, nullptr, &m_swapchain);
     uint32_t swapchainImageCount = 0;
     vkGetSwapchainImagesKHR(m_device, m_swapchain, &swapchainImageCount, nullptr);
     m_swapchainImages.resize(swapchainImageCount);
     vkGetSwapchainImagesKHR(m_device, m_swapchain, &swapchainImageCount, m_swapchainImages.data());
 }
-void FLUDER::Vulkan::VulkanManager::createImageViews(){
+void fldr::vk::Manager::createImageViews(){
     m_swapchainImageViews.resize(m_swapchainImageCount);
     for(int i = 0; i < m_swapchainImageCount; i++){
         VkImageViewCreateInfo imageViewCreateInfo = {};
@@ -235,9 +204,9 @@ void FLUDER::Vulkan::VulkanManager::createImageViews(){
         vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_swapchainImageViews[i]);
     }
 }
-void FLUDER::Vulkan::VulkanManager::createShaders(){
-    int exitCode1 = system("glslc.exe ../../../shaders/shader.vert -o vert.spv");
-    int exitCode2 = system("glslc.exe ../../../shaders/shader.frag -o frag.spv");
+void fldr::vk::Manager::createShaders(){
+    system("glslc.exe ../../../shaders/shader.vert -o vert.spv");
+    system("glslc.exe ../../../shaders/shader.frag -o frag.spv");
     std::vector<char> vertexShaderCode;
     std::vector<char> fragmentShaderCode;
     std::ifstream file1 = std::ifstream("vert.spv",std::ios_base::binary);
@@ -268,7 +237,7 @@ void FLUDER::Vulkan::VulkanManager::createShaders(){
     vkCreateShaderModule(m_device, &fragmentShaderModuleCreateInfo, nullptr, &m_fragmentShaderModule);
 }
 
-void FLUDER::Vulkan::VulkanManager::createPipeline(){
+void fldr::vk::Manager::createPipeline(){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
@@ -395,7 +364,7 @@ void FLUDER::Vulkan::VulkanManager::createPipeline(){
     vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_pipeline);
 
 }
-void FLUDER::Vulkan::VulkanManager::createCommandBuffer(){
+void fldr::vk::Manager::createCommandBuffer(){
     VkCommandPoolCreateInfo commandPoolCreateInfo = {};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -410,7 +379,7 @@ void FLUDER::Vulkan::VulkanManager::createCommandBuffer(){
 
     vkAllocateCommandBuffers(m_device, &commandBufferAllocateInfo, &m_commandBuffer);
 }
-void FLUDER::Vulkan::VulkanManager::createSemaphoresAndFences(){
+void fldr::vk::Manager::createSemaphoresAndFences(){
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -423,7 +392,7 @@ void FLUDER::Vulkan::VulkanManager::createSemaphoresAndFences(){
 
     vkCreateFence(m_device, &fenceCreateInfo, nullptr, &m_fence);
 }
-void FLUDER::Vulkan::VulkanManager::recordCommandBuffer(){
+void fldr::vk::Manager::recordCommandBuffer(){
     VkClearColorValue clearColorValue = {};
     clearColorValue.float32[0] = 0.0f;
     clearColorValue.float32[1] = 0.0f;
@@ -454,7 +423,7 @@ void FLUDER::Vulkan::VulkanManager::recordCommandBuffer(){
     imageMemoryBarrier1.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
     imageMemoryBarrier1.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageMemoryBarrier1.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    imageMemoryBarrier1.srcAccessMask = 0;
+    imageMemoryBarrier1.srcAccessMask = VK_ACCESS_2_NONE;
     imageMemoryBarrier1.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
     imageMemoryBarrier1.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
     imageMemoryBarrier1.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -473,7 +442,7 @@ void FLUDER::Vulkan::VulkanManager::recordCommandBuffer(){
     imageMemoryBarrier2.oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     imageMemoryBarrier2.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     imageMemoryBarrier2.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    imageMemoryBarrier2.dstAccessMask = 0;
+    imageMemoryBarrier2.dstAccessMask = VK_ACCESS_2_NONE;
     imageMemoryBarrier2.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
     imageMemoryBarrier2.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
     imageMemoryBarrier2.image = m_swapchainImages[m_imageReadyIndex];
@@ -506,7 +475,7 @@ void FLUDER::Vulkan::VulkanManager::recordCommandBuffer(){
     vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo2);
     vkEndCommandBuffer(m_commandBuffer);
 }
-void FLUDER::Vulkan::VulkanManager::draw(){
+void fldr::vk::Manager::draw(){
     vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, UINT64_MAX);
     vkResetFences(m_device, 1, &m_fence);
     vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_imageAcquireSemaphore, VK_NULL_HANDLE, &m_imageReadyIndex);
@@ -534,7 +503,7 @@ void FLUDER::Vulkan::VulkanManager::draw(){
     presentInfo.pImageIndices = &m_imageReadyIndex;
     vkQueuePresentKHR(m_presentQueue, &presentInfo);
 }
-void FLUDER::Vulkan::VulkanManager::createVertexBuffer(){
+void fldr::vk::Manager::createVertexBuffer(){
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.size = 12 * 4;
@@ -572,7 +541,7 @@ void FLUDER::Vulkan::VulkanManager::createVertexBuffer(){
     ((float *) data)[10] = 0.9f;
     ((float *) data)[11] = 0.0f;
 }
-void FLUDER::Vulkan::VulkanManager::createIndexBuffer(){
+void fldr::vk::Manager::createIndexBuffer(){
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.size = VkDeviceSize(4 * 6);

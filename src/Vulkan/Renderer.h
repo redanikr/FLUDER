@@ -1,10 +1,11 @@
 #pragma once
-#include "Window.h"
-namespace FLUDER {
+#include "../Window.h"
+#include <vulkan/vulkan.h>
+namespace fldr {
     class Renderer {
         public:
             Renderer(const Window & window);
-            void renderTriangle();
+            void addObject();
         private:
             const Window & m_window;
     };

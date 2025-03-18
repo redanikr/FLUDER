@@ -1,5 +1,5 @@
+#include <GLFW/glfw3.h>
 #include "Window.h"
-#include "glfw3.h"
 
 fldr::Window::Window() {
     glfwInit();

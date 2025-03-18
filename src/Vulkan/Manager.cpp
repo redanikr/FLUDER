@@ -1,9 +1,9 @@
 #include <fstream>
 #include <ios>
 #define VK_USE_PLATFORM_WIN32_KHR
-#include "glfw3.h"
+#include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
-#include "glfw3native.h"
+#include <GLFW/glfw3native.h>
 #include <vulkan/vulkan.h>
 #include <cstdint>
 #include <cstdlib>
@@ -143,7 +143,7 @@ void fldr::vk::Manager::getGraphicsQueueHandle(){
 void fldr::vk::Manager::createSurface(){
     VkWin32SurfaceCreateInfoKHR win32SurfaceCreateInfoKHR = {};
     win32SurfaceCreateInfoKHR.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    win32SurfaceCreateInfoKHR.hwnd = glfwGetWin32Window(m_window.getWindow());
+    win32SurfaceCreateInfoKHR.hwnd = glfwGetWin32Window(m_window.get());
     win32SurfaceCreateInfoKHR.hinstance = GetModuleHandle(nullptr);
     
     m_presentQueue = m_graphicsQueue;

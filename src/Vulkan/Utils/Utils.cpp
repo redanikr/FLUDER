@@ -1,5 +1,5 @@
 #include "Utils.h"
-#include "glfw3.h"
+#include <GLFW/glfw3.h>
 #include <fstream>
 std::vector<VkPhysicalDevice> fldr::vk::utils::availablePhysicalDevices(VkInstance instance){
     uint32_t deviceCount = 0;
